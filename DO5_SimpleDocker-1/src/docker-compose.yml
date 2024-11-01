@@ -1,0 +1,11 @@
+version: "3"
+services:
+        miniserver:
+                container_name: miniserver
+                build: .
+        nginx:
+                container_name: nginxserver
+                build: ./nginxserv
+                ports:
+                 - "80:8080"
+

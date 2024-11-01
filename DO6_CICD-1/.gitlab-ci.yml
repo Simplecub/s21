@@ -1,0 +1,62 @@
+default:
+  tags: [ci-cd]
+
+stages:          # List of stages for jobs, and their order of execution
+  - build
+  - lint-test
+  - unit-test
+  - deploy
+
+build-job:       # This job runs in the build stage, which runs first.
+  stage: build
+  script:
+    - cd src/cat
+    - echo "Compiling the code "cat"..."
+    - make
+    - cd ../grep
+    - echo "Compiling the code "grep"..."
+    - make
+  artifacts:
+    paths:
+      - src/cat/s21_cat
+      - src/grep/s21_grep
+    expire_in: 30 days
+  after_script:
+    - bash src/notifier.sh
+    - echo "Compile complete."
+
+
+lint-test-job:   # This job also runs in the lint-test stage.
+  stage: lint-test    
+  when: on_success
+  script:
+    - echo "Linting code... This will take about 10 seconds."
+    - cp materials/linters/.clang-format src/
+    - clang-format -n -Werror src/*/*.c src/*/*.h
+  after_script:
+    - bash src/notifier.sh
+
+unit-test-job:   # This job runs in the unit-test stage.
+  stage: unit-test   
+  when: on_success
+  script:
+    - echo "Running unit tests... This will take about 5 seconds."
+    - cd src/cat
+    - make test
+    - cd ../grep
+    - make test
+  after_script:
+    - bash src/notifier.sh
+
+    
+
+deploy-job:      # This job runs in the deploy stage.
+  stage: deploy  
+  when: manual
+  script:
+    - cd src
+    - echo "Deploying application..."
+    - scp cat/s21_cat grep/s21_grep chokepam@192.168.100.11:/usr/local/bin
+    - echo "Application successfully deployed."
+  after_script: 
+    - bash src/notifier.sh
